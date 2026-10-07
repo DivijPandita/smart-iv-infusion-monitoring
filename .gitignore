@@ -1,0 +1,26 @@
+# Virtual environment
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Notebooks
+.ipynb_checkpoints/
+
+# Generated data (regenerate with the scripts)
+data/raw/*.csv
+data/processed/*.csv
+results/*
+
+# Keep the folders themselves
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!results/.gitkeep
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
