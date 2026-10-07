@@ -53,6 +53,7 @@ load_cell:
   spike_probability: 0.002        # chance per sample of a sudden disturbance
   spike_magnitude_g: 6.0
   resolution_g: 0.01              # ADC quantisation step
+  dropout_probability: 0.002
 
 # ---------- Virtual IR drop counter ----------
 drop_sensor:

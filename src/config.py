@@ -80,6 +80,7 @@ class LoadCellConfig:
     spike_probability: float = 0.002
     spike_magnitude_g: float = 6.0
     resolution_g: float = 0.01
+    dropout_probability: float = 0.002
 
 
 @dataclass
@@ -308,6 +309,7 @@ def validate(cfg: AppConfig) -> None:
     check(lc.bias_tau_min > 0, "load_cell.bias_tau_min must be > 0")
     check(0 <= lc.spike_probability <= 1, "load_cell.spike_probability must be in [0, 1]")
     check(lc.resolution_g >= 0, "load_cell.resolution_g must be >= 0")
+    check(0 <= lc.dropout_probability < 1, "load_cell.dropout_probability must be in [0, 1)")
     check(ds.nominal_drop_factor > 0, "drop_sensor.nominal_drop_factor must be > 0")
     check(ds.actual_drop_factor > 0, "drop_sensor.actual_drop_factor must be > 0")
     check(0 <= ds.miss_probability < 1, "drop_sensor.miss_probability must be in [0, 1)")
