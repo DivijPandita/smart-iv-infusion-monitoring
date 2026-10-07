@@ -1,0 +1,125 @@
+# ============================================================
+# Smart IV Infusion Monitor: configuration
+# SOFTWARE SIMULATION ONLY. Not a medical device.
+# Units: mL, g, s, min, drops, as in each key name.
+# ============================================================
+
+paths:
+  raw_load_cell_file: data/raw/load_cell_data.csv
+  raw_drop_file: data/raw/drop_counter_data.csv
+  processed_results_file: data/processed/ekf_results.csv
+  experiments_dir: results
+
+# ---------- IV bag ----------
+bag:
+  initial_volume_ml: 500.0
+  empty_bag_weight_g: 25.0        # weight of the bag + tubing hanging on the load cell
+  fluid_density_g_per_ml: 1.0     # saline is approx. 1 g/mL
+
+# ---------- Simulation clock ----------
+simulation:
+  random_seed: 42
+  start_datetime: "2025-01-01 12:00:00"   # simulated wall-clock start (for completion time)
+  max_duration_min: 240.0
+  sample_rate_hz: 1.0                     # load-cell samples per second
+  stop_when_empty: true
+
+# ---------- True (hidden) flow rate ----------
+flow:
+  profile: piecewise              # piecewise | smooth | constant
+  base_flow_ml_min: 2.5
+  # piecewise: each segment lasts duration_min; flow = base * scale
+  segments:
+    - {duration_min: 5.0, scale: 1.00}   # 2.5 mL/min
+    - {duration_min: 5.0, scale: 1.20}   # 3.0 mL/min
+    - {duration_min: 5.0, scale: 0.88}   # 2.2 mL/min
+    - {duration_min: 5.0, scale: 1.12}   # 2.8 mL/min
+  repeat_segments: true
+  transition_s: 30.0              # smooth ramp between segments (no instant jumps)
+  # slow random wiggle added on top of any profile
+  variability_std_ml_min: 0.08
+  variability_tau_min: 5.0        # how slowly the wiggle changes
+  # used only when profile == smooth: base + A*sin(2*pi*t/period)
+  smooth_amplitude_ml_min: 0.4
+  smooth_period_min: 40.0
+
+# ---------- Virtual load cell (+ HX711 equivalent) ----------
+load_cell:
+  noise_std_g: 0.20               # white Gaussian noise
+  vibration_amplitude_g: 0.15     # sinusoidal vibration (someone bumps the pole)
+  vibration_freq_hz: 0.35
+  bias_std_g: 0.30                # slowly drifting bias (thermal drift), std of the drift
+  bias_tau_min: 30.0              # how slowly the bias wanders
+  spike_probability: 0.002        # chance per sample of a sudden disturbance
+  spike_magnitude_g: 6.0
+  resolution_g: 0.01              # ADC quantisation step
+
+# ---------- Virtual IR drop counter ----------
+drop_sensor:
+  nominal_drop_factor: 15.0       # printed on the tubing package
+  actual_drop_factor: 14.5        # hidden truth (real tubing: roughly 14.2 to 16.0)
+  miss_probability: 0.03          # a real drop that is not detected
+  false_detection_rate_per_min: 0.5   # phantom drops (bubbles, light flicker)
+  jitter_std_fraction: 0.05       # timing jitter as a fraction of the drop interval
+
+# ---------- Preprocessing / windowing ----------
+preprocessing:
+  window_size_s: 60.0
+  window_step_s: 60.0             # equal to window size -> non-overlapping windows
+  max_gap_s: 5.0                  # fill missing weight samples only if the gap is shorter
+  spike_filter_enabled: true
+  spike_filter_window_samples: 9
+  spike_mad_threshold: 6.0        # reject samples this many robust-sigmas from the local median
+  smoothing_enabled: true
+  smoothing_samples: 5            # light smoothing only; we do NOT want to hide noise from the EKF
+
+# ---------- Extended Kalman Filter ----------
+ekf:
+  sensor_mode: fusion             # fusion | load_cell_only | drop_only
+  # initial guess for the state x = [flow (mL/min), drop_factor (drops/mL)]
+  initial_flow_ml_min: 2.0
+  initial_drop_factor: 15.0
+  # initial uncertainty (standard deviations -> becomes the diagonal of P0)
+  initial_flow_std: 1.0
+  initial_drop_factor_std: 2.0
+  # process noise Q: how much we let the state wander, as variance per minute
+  q_flow_var_per_min: 0.01
+  q_drop_factor_var_per_min: 0.0001
+  # measurement noise R (standard deviations of each measurement)
+  r_weight_flow_std_ml_min: 0.30
+  r_drop_rate_std_drops_min: 2.0
+
+# ---------- Remaining-time prediction ----------
+prediction:
+  confidence_z: 1.96              # 95% interval
+  min_flow_ml_min: 0.05           # floor to avoid dividing by ~0
+
+# ---------- Alerts ----------
+alerts:
+  warning_min: 30.0
+  critical_min: 10.0
+  disagreement_relative_threshold: 0.25   # |weight_flow - drop_flow| / fused_flow
+
+# ---------- Dashboard ----------
+dashboard:
+  title: "Smart IV Infusion Monitoring: Software Prototype"
+  replay_speed: 120.0             # simulated seconds shown per real second
+  update_interval_ms: 400
+
+# ---------- Sensor-failure experiments (used in Step 17) ----------
+failure_scenarios:
+  load_cell_noisy:
+    description: "Load cell suddenly becomes much noisier"
+    start_min: 60.0
+    end_min: 100.0
+    load_cell_noise_multiplier: 10.0
+  ir_missing_drops:
+    description: "IR sensor misses 20% of drops"
+    start_min: 60.0
+    end_min: 100.0
+    drop_miss_probability: 0.20
+  sensors_disagree:
+    description: "Drop counter over-counts, so sensors disagree"
+    start_min: 60.0
+    end_min: 100.0
+    drop_rate_scale: 1.25
