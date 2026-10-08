@@ -186,3 +186,9 @@ def test_pipeline_does_not_use_truth_columns(default_run):
     bare = run_pipeline(cfg, ds.load_cell[["timestamp", "measured_weight_g"]], ds.drops[["timestamp"]])
     pd.testing.assert_series_equal(res["remaining_time_min"], bare["remaining_time_min"])
     assert not any(c.startswith("ref_") for c in bare.columns)
+
+def test_total_flow_sigma_is_inflated_by_disagreement():
+    cfg = load_config()                                               # includes sigma_future = 0.25
+    calm = effective_flow_std(0.1, 0.0, cfg)
+    disagreeing = effective_flow_std(0.1, 0.25, cfg)
+    assert disagreeing == pytest.approx(calm * 1.5)                   # 1 + 2.0 * 0.25
