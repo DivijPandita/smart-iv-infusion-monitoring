@@ -87,7 +87,7 @@ ekf:
   q_flow_var_per_min: 0.01
   q_drop_factor_var_per_min: 0.0001
   # measurement noise R (standard deviations of each measurement)
-  r_weight_flow_std_ml_min: 0.30
+  r_weight_flow_std_ml_min: 0.20
   r_drop_rate_std_drops_min: 2.0
 
 # ---------- Remaining-time prediction ----------
