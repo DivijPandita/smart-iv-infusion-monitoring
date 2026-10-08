@@ -116,11 +116,13 @@ class EKFConfig:
     r_weight_flow_std_ml_min: float = 0.30
     r_drop_rate_std_drops_min: float = 2.0
 
-
 @dataclass
 class PredictionConfig:
     confidence_z: float = 1.96
     min_flow_ml_min: float = 0.05
+    volume_std_ml: float = 1.0
+    future_flow_std_ml_min: float = 0.25
+    disagreement_inflation: float = 2.0
 
 
 @dataclass
@@ -128,6 +130,7 @@ class AlertsConfig:
     warning_min: float = 30.0
     critical_min: float = 10.0
     disagreement_relative_threshold: float = 0.25
+    use_lower_bound: bool = False
 
 
 @dataclass
@@ -341,6 +344,9 @@ def validate(cfg: AppConfig) -> None:
     # prediction / alerts
     check(cfg.prediction.confidence_z > 0, "prediction.confidence_z must be > 0")
     check(cfg.prediction.min_flow_ml_min > 0, "prediction.min_flow_ml_min must be > 0")
+    check(cfg.prediction.volume_std_ml >= 0, "prediction.volume_std_ml must be >= 0")
+    check(cfg.prediction.future_flow_std_ml_min >= 0, "prediction.future_flow_std_ml_min must be >= 0")
+    check(cfg.prediction.disagreement_inflation >= 0, "prediction.disagreement_inflation must be >= 0")
     check(cfg.alerts.critical_min > 0, "alerts.critical_min must be > 0")
     check(cfg.alerts.critical_min < cfg.alerts.warning_min,
           "alerts.critical_min must be smaller than alerts.warning_min")

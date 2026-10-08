@@ -90,17 +90,18 @@ ekf:
   r_weight_flow_std_ml_min: 0.20
   r_drop_rate_std_drops_min: 2.0
 
-# ---------- Remaining-time prediction ----------
 prediction:
   confidence_z: 1.96              # 95% interval
   min_flow_ml_min: 0.05           # floor to avoid dividing by ~0
+  volume_std_ml: 1.0              # uncertainty of the weight-derived volume (bias + noise)
+  future_flow_std_ml_min: 0.25    # how much the flow may differ from now over the rest of the infusion
+  disagreement_inflation: 2.0     # sigma_flow grows by (1 + this * relative_disagreement)
 
-# ---------- Alerts ----------
 alerts:
   warning_min: 30.0
   critical_min: 10.0
   disagreement_relative_threshold: 0.25   # |weight_flow - drop_flow| / fused_flow
-
+  use_lower_bound: false          # true = judge the alert on the CI lower bound (earlier, more cautious)
 # ---------- Dashboard ----------
 dashboard:
   title: "Smart IV Infusion Monitoring: Software Prototype"
