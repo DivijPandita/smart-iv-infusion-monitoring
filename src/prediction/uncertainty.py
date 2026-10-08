@@ -37,16 +37,16 @@ def sensor_disagreement(flow_weight, flow_drop, flow_fused, min_flow_ml_min: flo
 def effective_flow_std(ekf_flow_std, rel_disagreement, cfg: AppConfig):
     """Flow uncertainty used for the time prediction.
 
-        sigma_eff = sqrt( (sigma_EKF * (1 + g * disagreement))^2 + sigma_future^2 )
+        sigma_eff = sqrt(sigma_EKF^2 + sigma_future^2) * (1 + g * disagreement)
 
-    - sigma_EKF  : sqrt(P[0,0]) from the EKF (grows when sensors are noisy)
-    - g          : prediction.disagreement_inflation (a safety margin, not a derived quantity)
+    - sigma_EKF   : sqrt(P[0,0]) from the EKF (grows when sensors are noisy)
     - sigma_future: prediction.future_flow_std_ml_min (the flow may change before the bag empties)
+    - g           : prediction.disagreement_inflation (a safety margin, not a derived quantity)
     """
     pc = cfg.prediction
     rel = np.nan_to_num(np.asarray(rel_disagreement, dtype=float), nan=0.0)
-    inflated = np.asarray(ekf_flow_std, dtype=float) * (1.0 + pc.disagreement_inflation * rel)
-    return np.sqrt(inflated ** 2 + pc.future_flow_std_ml_min ** 2)
+    base = np.sqrt(np.asarray(ekf_flow_std, dtype=float) ** 2 + pc.future_flow_std_ml_min ** 2)
+    return base * (1.0 + pc.disagreement_inflation * rel)
 
 
 def confidence_interval(remaining_min, sigma_min, z: float = 1.96):
